@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := docker-image
 
-IMAGE ?= cncamp/demo8-server:latest
+IMAGE ?= flyinpenguin/demo8-server:latest
 
 image/demo8-server: $(shell find . -name '*.go')
 	CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o $@ ./cmd/main.go
