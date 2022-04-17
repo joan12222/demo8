@@ -1,3 +1,12 @@
+apiVersion: v1
+data:
+  .dockerconfigjson: ewoJImF1dGhzIjogewoJCSJodHRwczovL2luZGV4LmRvY2tlci5pby92MS8iOiB7CgkJCSJhdXRoIjogIlpteDVhVzV3Wlc1bmRXbHVPbVp2Y25CaGJtUmhPRGt3TURBPSIKCQl9Cgl9Cn0=
+kind: Secret
+metadata:
+  name: cloudnative
+  namespace: cn-demo
+type: kubernetes.io/dockerconfigjson
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,6 +24,8 @@ spec:
       labels:
         app: demo8
     spec:
+      imagePullSecrets:
+      - name: cloudnative
       containers:
       - env:
         - name: LOG_LEVEL
@@ -23,50 +34,24 @@ spec:
               name: game-demo
               key: loglevel
         name: demo8
-        image: flyinpengin/demo8-server:latest
+        image: flyinpenguin/demo8-server:latest
         imagePullPolicy: Always
-        imagePullSecrets: cloudnative
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 3
         resources:
           limits:
             memory: 1Gi
-            cpu:1
+            cpu: 1
           requests:
             memory: 512Mi
-            cpu:500m
-        qosClass: Burstable
+            cpu: 500m
         ports:
         - containerPort: 8080
----
-apiVersion: v1
-kind: Secret
-data:
-  .dockerconfigjson: ewoJImF1dGhzIjogewoJCSJodHRwczovL2luZGV4LmRvY2tlci5pby92MS8iOiB7CgkJCSJhdXRoIjogIlpteDVhVzV3Wlc1bmRXbHVPbVp2Y25CaGJtUmhPRGt3TURBPSIKCQl9Cgl9Cn0
-metadata:
-  name: cloudnative
-  namespace: cn-demo
-type: kubernetes.io/dockerconfigjson
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: initial-delay
-spec:
-  containers:
-    - env:
-      - name: LOG_LEVEL
-        valueFrom:
-          configMapKeyRef:
-            name: game-demo
-            key: loglevel
-    - name: demo8-server
-      image: flyinpengin/demo8-server:latest
-      livenessProbe:
-        httpGet:
-          path: /healthz
-          port: 8080
-          scheme: HTTP
-        initialDelaySeconds: 5
-        periodSeconds: 3
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -74,5 +59,37 @@ metadata:
   name: game-demo
 data:
   loglevel: debug
-
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo8-server
+  namespace: cn-demo
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: demo8-server
+  type: loadBalancer 
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demo8-server-80
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: demo8.test.com
+    http:
+      paths:
+        - backend:
+          service:
+            name: demo8-server
+            port:
+              number: 80
+          path: /
+          pathType: Prefix
 
