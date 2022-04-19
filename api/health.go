@@ -7,5 +7,8 @@ import (
 
 // functions user need to write
 func HealthCheck(c *srv.Context) {
-	c.WriteJson(http.StatusOK, "Healthy")
+	resp_json := &commonResponse{
+		Data: "healthy",
+	}
+	_ = c.WriteJson(http.StatusOK, resp_json)
 }
