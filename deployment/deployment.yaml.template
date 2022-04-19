@@ -13,16 +13,16 @@ metadata:
   name: demo8-server
   namespace: cn-demo
   labels:
-    app: demo8
+    app: demo8-server
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: demo8
+      app: demo8-server
   template:
     metadata:
       labels:
-        app: demo8
+        app: demo8-server
     spec:
       imagePullSecrets:
       - name: cloudnative
@@ -57,6 +57,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: game-demo
+  namespace: cn-demo
 data:
   loglevel: debug
 ---
@@ -73,12 +74,13 @@ spec:
     targetPort: 8080
   selector:
     app: demo8-server
-  type: loadBalancer 
+  type: LoadBalancer 
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: demo8-server-80
+  namespace: cn-demo
 spec:
   ingressClassName: nginx
   rules:
@@ -86,10 +88,10 @@ spec:
     http:
       paths:
         - backend:
-          service:
-            name: demo8-server
-            port:
-              number: 80
+            service:
+              name: demo8-server
+              port:
+                number: 80
           path: /
           pathType: Prefix
 
